@@ -43,16 +43,6 @@ jobs:
       - add_ssh_keys:
           fingerprints: ["cc:3f:bd:62:22:5b:05:02:02:73:58:c4:84:44:f7:a4"]
       - run:
-          name: Update packages
-          command: | 
-            sudo apt update
-      
-      - run:
-          name: Install pip
-          command: |
-            sudo apt install python3-pip
-      
-      - run:
           name: Install Ansible
           command: |
             pip3 install ansible
