@@ -3,7 +3,7 @@
 - name: Exercise for configuring and deploying an EC2 instance
   # hosts: ubuntu
   # Use the public IP if the VM is already created
-  hosts: 18.204.4.121
+  hosts: [all]
   user: ubuntu
   become: true
   become_method: sudo

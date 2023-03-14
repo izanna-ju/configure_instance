@@ -53,7 +53,7 @@ jobs:
       - run:
           name: Run Playbook and Configure server
           command: | 
-            ansible-playbook main-remote.yml
+            ansible-playbook -i inventory.txt main-remote.yml
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
