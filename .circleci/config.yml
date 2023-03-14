@@ -35,21 +35,38 @@ jobs:
   #           --stack-name juliusStack-${CIRCLE_WORKFLOW_ID:0:5} \
   #           --region us-east-1 
   
-  configure-infrastructure:
+  # configure-infrastructure:
+  #   docker:
+  #     - image: cimg/python:3.10
+  #   steps:
+  #     - checkout
+  #     - add_ssh_keys:
+  #         fingerprints: ["cc:3f:bd:62:22:5b:05:02:02:73:58:c4:84:44:f7:a4"]
+  #     - run:
+  #         name: Install Ansible
+  #         command: |
+  #           pip3 install ansible
+  #     - run:
+  #         name: Run Playbook and Configure server
+  #         command: | 
+  #           ansible-playbook -i inventory.txt main-remote.yml
+
+  smoke-test:
     docker:
-      - image: cimg/python:3.10
+      - image: alpine:latest
     steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints: ["cc:3f:bd:62:22:5b:05:02:02:73:58:c4:84:44:f7:a4"]
+      - run: apk add --update curl
       - run:
-          name: Install Ansible
+          name: smoke test
           command: |
-            pip3 install ansible
-      - run:
-          name: Run Playbook and Configure server
-          command: | 
-            ansible-playbook -i inventory.txt main-remote.yml
+            URL="https://blog.udacity.com/"
+            # Test if website exists
+            if curl -s --head ${URL} 
+            then
+              return 0
+            else
+              return 1
+            fi
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -60,4 +77,5 @@ workflows:
       # - download_file:
       #     requires: [upload_file]
       # - create-infrastructure
-      - configure-infrastructure
+      # - configure-infrastructure
+      - smoke-test
