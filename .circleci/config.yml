@@ -45,12 +45,12 @@ jobs:
       - run:
           name: Update packages
           command: | 
-            apt update
+            sudo apt update
       
       - run:
           name: Install pip
           command: |
-            apt install python3-pip
+            sudo apt install python3-pip
       
       - run:
           name: Install Ansible
