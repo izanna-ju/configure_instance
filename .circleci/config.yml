@@ -71,7 +71,7 @@ jobs:
             --template-file bucket.yml \
             --stack-name stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:5} \
             --parameter-overrides MyBucketName="izannabucket-$CIRCLE_WORKFLOW_ID:0:5}"
-      - run: aws s3 sync . s3://izannabucket-$CIRCLE_WORKFLOW_ID:0:5} --delete
+      # - run: aws s3 sync . s3://izannabucket-$CIRCLE_WORKFLOW_ID:0:5} --delete
 
   get-last-deployment-id:
     docker:
