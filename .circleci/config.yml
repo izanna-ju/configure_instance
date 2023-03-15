@@ -30,18 +30,18 @@ jobs:
   # Exercise: Infrastructure Creation
   # Exercise - Rollback
 
-  create-infrastructure:
-    docker:
-      - image: amazon/aws-cli
-    steps:
-      - checkout
-      - run:
-          name: "Create Cloudformation Stack Command"
-          command: |
-            aws cloudformation deploy \
-            --template-file template.yml \
-            --stack-name juliusStack-${CIRCLE_WORKFLOW_ID:0:5} \
-            --region us-east-1 
+  # create-infrastructure:
+  #   docker:
+  #     - image: amazon/aws-cli
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: "Create Cloudformation Stack Command"
+  #         command: |
+  #           aws cloudformation deploy \
+  #           --template-file template.yml \
+  #           --stack-name juliusStack-${CIRCLE_WORKFLOW_ID:0:5} \
+  #           --region us-east-1 
   
   # configure-infrastructure:
   #   docker:
@@ -59,15 +59,73 @@ jobs:
   #         command: | 
   #           ansible-playbook -i inventory.txt main-remote.yml
 
-  smoke-test:
+  create-and-deploy-frontend:
     docker:
       - image: amazon/aws-cli
     steps:
+      - checkout
       - run:
-          name: smoke test
+          name: Execute bucket.yml - Create Cloudformation Stack
           command: |
-            return 1
-      - destroy_environment
+            aws cloudformation deploy \
+            --template-file bucket.yml \
+            --stack-name stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:5} \
+            --parameter-overrides MyBucketName="izannabucket-$CIRCLE_WORKFLOW_ID:0:5}"
+      - run: aws s3 sync . s3://izannabucket-$CIRCLE_WORKFLOW_ID:0:5} --delete
+
+  get-last-deployment-id:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: apt install -y tar gzip
+      - run:
+          name: Fetch and save the old pipeline ID (bucket name) responsible for the last release
+          command: |
+            aws cloudformation \
+            list-exports --query "Exports[?Name==\`PipelineID\`].Value" \
+            --no-paginate --output text > ~/textfile.txt
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - textfile.txt
+    
+  promote-to-production:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Execute cloudfront.yml
+          command: |
+            aws cloudformation deploy \
+            --template-file cloudfront.yml \
+            --stack-name production-distro \
+            --parameter-overrides PipelineID="izannabucket-${CIRCLE_WORKFLOW_ID:0:5}"
+    
+  clean-up-old-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: apt install -y tar gzip
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Destroy the previous s3 bucket and cloudformation stack
+          command: |
+            export OldBucketID=$(cat ~/textfile.txt)
+            aws s3 rm "s3://${OldBucketID}" --recursive
+
+  # smoke-test:
+  #   docker:
+  #     - image: amazon/aws-cli
+  #   steps:
+  #     - run:
+  #         name: smoke test
+  #         command: |
+  #           return 1
+  #     - destroy_environment
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -77,8 +135,17 @@ workflows:
       # - upload_file
       # - download_file:
       #     requires: [upload_file]
-      - create-infrastructure
+      # - create-infrastructure
       # - configure-infrastructure
-      - smoke-test:
+      # - smoke-test:
+      #     requires:
+      #       - create-infrastructure
+      - create-and-deploy-frontend
+      - promote-to-production:
           requires:
-            - create-infrastructure
+            - create-and-deploy-frontend
+      - get-last-deployment-id
+      - clean-up-old-frontend:
+          requires:
+            - get-last-deployment-id
+            - promote-to-production
