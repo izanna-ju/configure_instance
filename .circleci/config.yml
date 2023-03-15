@@ -1,5 +1,13 @@
 version: 2.1
 
+commands:
+  destroy_environment:
+    steps:
+      - run:
+          name: Destroy environment
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack --stack-name juliusStack-${CIRCLE_WORKFLOW_ID:0:5}
 jobs:
   # upload_file:
   #   docker:
@@ -22,18 +30,18 @@ jobs:
   # Exercise: Infrastructure Creation
   # Exercise - Rollback
 
-  # create-infrastructure:
-  #   docker:
-  #     - image: amazon/aws-cli
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         name: "Create Cloudformation Stack Command"
-  #         command: |
-  #           aws cloudformation deploy \
-  #           --template-file template.yml \
-  #           --stack-name juliusStack-${CIRCLE_WORKFLOW_ID:0:5} \
-  #           --region us-east-1 
+  create-infrastructure:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: "Create Cloudformation Stack Command"
+          command: |
+            aws cloudformation deploy \
+            --template-file template.yml \
+            --stack-name juliusStack-${CIRCLE_WORKFLOW_ID:0:5} \
+            --region us-east-1 
   
   # configure-infrastructure:
   #   docker:
@@ -59,14 +67,8 @@ jobs:
       - run:
           name: smoke test
           command: |
-            URL="https://blog.udacity.com/"
-            # Test if website exists
-            if curl -s --head ${URL} 
-            then
-              return 0
-            else
-              return 1
-            fi
+            return 1
+      - destroy_environment
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -76,6 +78,8 @@ workflows:
       # - upload_file
       # - download_file:
       #     requires: [upload_file]
-      # - create-infrastructure
+      - create-infrastructure
       # - configure-infrastructure
-      - smoke-test
+      - smoke-test:
+          requires:
+            - create-infrastructure
