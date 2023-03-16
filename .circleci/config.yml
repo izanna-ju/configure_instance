@@ -7,7 +7,7 @@ commands:
           name: Destroy environment
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name juliusStack-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name juliusStack-${CIRCLE_WORKFLOW_ID:0:5}
 jobs:
   # upload_file:
   #   docker:
@@ -70,8 +70,8 @@ jobs:
             aws cloudformation deploy \
             --template-file bucket.yml \
             --stack-name stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7} \
-            --parameter-overrides MyBucketName="izannabucket-$CIRCLE_WORKFLOW_ID:0:7}"
-      - run: aws s3 sync . s3://izannabucket-$CIRCLE_WORKFLOW_ID:0:7} --delete
+            --parameter-overrides MyBucketName="izannabucket2023"
+      - run: aws s3 sync . s3://izannabucket2023 --delete
 
   get-last-deployment-id:
     docker:
@@ -101,7 +101,7 @@ jobs:
             aws cloudformation deploy \
             --template-file cloudfront.yml \
             --stack-name production-distro \
-            --parameter-overrides PipelineID="izannabucket-${CIRCLE_WORKFLOW_ID:0:7}"
+            --parameter-overrides PipelineID="izannabucket2023"
     
   clean-up-old-frontend:
     docker:
